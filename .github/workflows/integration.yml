@@ -1,0 +1,46 @@
+name: build
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+      - name: Parse version from tag
+        id: version
+        run: |
+          TAG=$(git tag --sort=-creatordate | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "v0.0.0")
+          MAJOR=$(echo $TAG | cut -d. -f1 | tr -d 'v')
+          MINOR=$(echo $TAG | cut -d. -f2)
+          PATCH=$(echo $TAG | cut -d. -f3)
+          BUILD=${{ github.run_number }}
+          echo "major=$MAJOR"   >> $GITHUB_OUTPUT
+          echo "minor=$MINOR"   >> $GITHUB_OUTPUT
+          echo "patch=$PATCH"   >> $GITHUB_OUTPUT
+          echo "build=$BUILD"   >> $GITHUB_OUTPUT
+          echo "version=$MAJOR.$MINOR.$PATCH.$BUILD" >> $GITHUB_OUTPUT
+      - name: Cache FetchContent deps
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: ${{ runner.os }}-deps-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: ${{ runner.os }}-deps-
+      - name: Configure
+        run: |
+          cmake -S . -B build \
+            -DVERSION_MAJOR=${{ steps.version.outputs.major }} \
+            -DVERSION_MINOR=${{ steps.version.outputs.minor }} \
+            -DVERSION_PATCH=${{ steps.version.outputs.patch }} \
+            -DVERSION_BUILD=${{ steps.version.outputs.build }}
+      - name: Run tests (empty libs/bin in CI)
+        run: |
+          mkdir -p libs bin
+          cmake --build build --target tests_main
+          ./build/tests_main
+      - name: Build main
+        run: cmake --build build --target main-demo
