@@ -2,6 +2,14 @@
 #include <dlfcn.h>
 #include <filesystem>
 
+#ifdef __APPLE__
+#define LIB_EXTENSION ".dylib"
+#elif __linux__
+#define LIB_EXTENSION ".so"
+#else
+#error Platform not defined
+#endif
+
 namespace fs = std::filesystem;
 
 void try_load_lib(const fs::path& p) {
@@ -22,7 +30,9 @@ int main() {
     std::cout << "=== main-demo ===\n\n-- libs --\n";
     if (fs::exists("libs"))
         for (auto& e : fs::directory_iterator("libs"))
-            if (e.path().extension() == ".so") try_load_lib(e.path());
+            //if (e.path().extension() == ".so") try_load_lib(e.path());
+            //if (e.path().extension() == ".dylib") try_load_lib(e.path());
+            if (e.path().extension() == LIB_EXTENSION) try_load_lib(e.path());
 
     std::cout << "\n-- binaries --\n";
     if (fs::exists("bin"))
