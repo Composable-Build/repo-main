@@ -1,0 +1,14 @@
+name: notify-packager
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  call-packager:
+    uses: ton-org/repo-packager/.github/workflows/rebuild-packages.yml@main
+    with:
+      target: server-a
+      ref: ${{ github.event.release.tag_name }}
+    secrets:
+      PACKAGER_TOKEN: ${{ secrets.PACKAGER_TOKEN }}
