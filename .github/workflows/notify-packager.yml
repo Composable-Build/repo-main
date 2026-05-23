@@ -1,14 +1,27 @@
 name: notify-packager
 
 on:
-  release:
-    types: [published]
-
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      repo:
+        required: true
+        type: string
+      tag:
+        required: true
+        type: string        
 jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "notify version ${{ inputs.version }}"
+      - run: test -n "${{ secrets.PACKAGER_TOKEN }}"
   call-packager:
-    uses: ton-org/repo-packager/.github/workflows/rebuild-packages.yml@main
+    uses: Composable-Build/repo-packager/.github/workflows/rebuild-packages.yml@main
     with:
-      target: server-a
-      ref: ${{ github.event.release.tag_name }}
+      repo: ${{ inputs.repo }}
+      tag: ${{ inputs.tag }}
     secrets:
       PACKAGER_TOKEN: ${{ secrets.PACKAGER_TOKEN }}
